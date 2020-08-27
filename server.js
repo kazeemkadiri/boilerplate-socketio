@@ -78,6 +78,14 @@ mongo.connect(process.env.DATABASE, (err, db) => {
           });
       });
 
+      socket.on('chat message',message => {
+        io.emit('chat message',
+          {
+            name: socket.request.user.name,
+ 	    message
+          });
+      });
+
     });
     //end socket.io code
   
