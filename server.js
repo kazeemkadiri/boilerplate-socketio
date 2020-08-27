@@ -1,5 +1,6 @@
 'use strict';
 
+require('dotenv').config();
 const express     = require('express');
 const session     = require('express-session');
 const bodyParser  = require('body-parser');
@@ -12,7 +13,7 @@ const cookieParser= require('cookie-parser')
 const app         = express();
 const http        = require('http').Server(app);
 const sessionStore= new session.MemoryStore();
-
+const passportSocketIo = require('passport.socketio');
 
 fccTesting(app); //For FCC testing purposes
 
@@ -42,9 +43,50 @@ mongo.connect(process.env.DATABASE, (err, db) => {
   
     //start socket.io code  
 
-  
+    const io = require('socket.io')(http);  
 
+    let currentUsers = 0;
+    
+    io.use(passportSocketIo.authorize({
+        cookieParser: cookieParser,
+        key:          'express.sid',
+        secret:       process.env.SESSION_SECRET,
+        store:        sessionStore
+    }));
+
+    io.on('connection', socket => {
+      console.log("A user has connected");
+
+      ++currentUsers;
+
+      io.emit('user', 
+          {
+           name:socket.request.user.name,
+           currentUsers,
+           connected: true
+          });
+
+      socket.on('disconnect', function(){
+        --currentUsers;
+	console.log('Current users', currentUsers);
+
+        io.emit('user', 
+          {
+           name:socket.request.user.name,
+           currentUsers,
+           connected: false
+          });
+      });
+
+      socket.on('chat message',message => {
+        io.emit('chat message',
+          {
+            name: socket.request.user.name,
+ 	    message
+          });
+      });
+
+    });
     //end socket.io code
-  
   
 });
