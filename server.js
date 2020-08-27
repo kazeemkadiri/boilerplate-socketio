@@ -1,5 +1,6 @@
 'use strict';
 
+require('dotenv').config();
 const express     = require('express');
 const session     = require('express-session');
 const bodyParser  = require('body-parser');
@@ -42,9 +43,21 @@ mongo.connect(process.env.DATABASE, (err, db) => {
   
     //start socket.io code  
 
-  
+    const io = require('socket.io')(http);  
 
+    let currentUsers = 0;
+
+    io.on('connection', socket => {
+      console.log("A user has connected");
+
+      ++currentUsers;
+
+      io.emit('user count', currentUsers);
+
+      socket.on('user count', data => {
+	  console.log(data);
+      });
+    });
     //end socket.io code
-  
   
 });
