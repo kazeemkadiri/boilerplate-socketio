@@ -13,7 +13,7 @@ const cookieParser= require('cookie-parser')
 const app         = express();
 const http        = require('http').Server(app);
 const sessionStore= new session.MemoryStore();
-
+const passportSocketIo = require('passport.socketio');
 
 fccTesting(app); //For FCC testing purposes
 
@@ -46,6 +46,13 @@ mongo.connect(process.env.DATABASE, (err, db) => {
     const io = require('socket.io')(http);  
 
     let currentUsers = 0;
+    
+    io.use(passportSocketIo.authorize({
+        cookieParser: cookieParser,
+        key:          'express.sid',
+        secret:       process.env.SESSION_SECRET,
+        store:        sessionStore
+    }));
 
     io.on('connection', socket => {
       console.log("A user has connected");
@@ -56,6 +63,7 @@ mongo.connect(process.env.DATABASE, (err, db) => {
 
       socket.on('disconnect', function(){
         --currentUsers;
+	console.log('Current users', currentUsers);
    	io.emit('user count', currentUsers);
       });
 
